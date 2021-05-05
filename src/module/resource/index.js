@@ -8,6 +8,7 @@
 const Path = require('path')
 const Fs = require('fs').promises
 const Message = require('../../util/message')
+const FixPath = require('../../util/fix-path')
 
 /**
  * @name 迭代
@@ -18,8 +19,8 @@ const Message = require('../../util/message')
 async function iterate(path, result, excludes) {
   Message.info(`Scanned ${path}`)
 
-  for(let a of excludes){
-    if(a.test(path)){
+  for (let a of excludes) {
+    if (a.test(path)) {
       Message.info(`Excluded ${path}`)
 
       return
@@ -29,7 +30,7 @@ async function iterate(path, result, excludes) {
   if ((await Fs.stat(path)).isDirectory()) {
     let subNames = await Fs.readdir(path)
     for (let el of subNames) {
-      let subPath = fixPath(Path.resolve(path, el))
+      let subPath = FixPath(Path.resolve(path, el))
 
       await iterate(subPath, result, excludes)
     }
@@ -37,25 +38,18 @@ async function iterate(path, result, excludes) {
     result.push(path)
   }
 }
-/**
- * @name 修复路径
- * @description 更改路径中的\\为/
- * @param {String} path 路径
- * @return {String} 修复后路径
- */
-function fixPath(path) {
-  return path.replace(/\\/g, '/')
-}
 
 /* public */
 
 /**
  * @name 扫描
- * @param {String} path 起始地址
- * @param {Array} excludes 排除
+ * @param {String} config 配置
  * @return {Object} 目录
  */
-async function scan(path, excludes = []) {
+async function scan(config) {
+  let path = config.localBase
+  let excludes = config.excludes || []
+
   try {
     let directory = []
     await iterate(path, directory, excludes)
